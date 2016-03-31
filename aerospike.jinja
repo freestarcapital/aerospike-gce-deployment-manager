@@ -13,6 +13,9 @@
 
 # Aerospike Server definition
 #
+
+{% import 'aerospike.conf.jinja' as aerospike %}
+
 {% set namePrefix = properties["namePrefix"] %}
 {% set network = properties["network"] %}
 {% set project = env["project"] %}
@@ -51,12 +54,14 @@ resources:
     localSSDs: {{ numLocalSSDs }}
     {% if properties['useShadowDisk'] %}
     disks:
-      - deviceName: {{ dataDiskSuffix }}
+        {% for n in range(numLocalSSDs) %}
+      - deviceName: {{ dataDiskSuffix + '-' +n|string }}
         type: PERSISTENT
         diskType: pd-ssd
-        diskSizeGb: {{ numLocalSSDs * 375 }}
+        diskSizeGb: 375 # Match non-persistent store size
         boot: False
-        autoDelete: True
+        autoDelete: False
+        {% endfor %}
     {% endif %}
     tags:
       items:
@@ -69,6 +74,9 @@ resources:
         value: {{ aerospikeVersion }}
       - key: AEROSPIKE_CLUSTER
         value: "{{ hostnames() | trim }}"
+      - key: AEROSPIKE_CONF
+        value: |
+           {{ aerospike.GenerateNamespaceConf() | indent(12) }}
 
 outputs:
   - name: initialPrimarySelfLink

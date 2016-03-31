@@ -1,17 +1,14 @@
-mports:
-  - name: deployment_coordinator.jinja
-    path: common/deployment_coordinator.jinja
-  - name: path_utils.jinja
-    path: common/path_utils.jinja
+imports:
   - name: common.py
-    path: common/common.py
+    path: gcp/common.py
   - name: default.py
-    path: common/default.py
+    path: gcp/default.py
   - name: vm_instance.py
-    path: common/vm_instance_nvme.py
+    path: gcp/vm_instance_nvme.py
   - name: vm_multiple_instances.py
-    path: common/vm_multiple_instances.py
+    path: gcp/vm_multiple_instances.py
   - path: aerospike.jinja
+  - path: aerospike.conf.jinja
 
 
 required:
