@@ -1,0 +1,37 @@
+# aerospike-config.yaml
+#
+# Deployment Manager template for deploying Aerospike on a cluster of servers.
+#
+# The Aerospike deployment here consists of the following replica pool:
+#  * Aerospike server instances
+#
+# A gcp Aerospike replicaset deployment will have 2 Aerospike instances
+
+imports:
+- path: aerospike.jinja
+- name: default.py
+  path: gcp/default.py
+- name: common.py
+  path: gcp/common.py
+- name: vm_instance.py
+  path: gcp/vm_instance_nvme.py
+- name: vm_multiple_instances.py
+  path: gcp/vm_multiple_instances.py
+
+resources:
+- name: aerospike_server
+  type: aerospike.jinja
+  properties:
+    # Begin: GCE resource parameters
+    numReplicas: 2
+    namePrefix: aerospike
+    zone: us-central1-f
+    machineType: n1-standard-1
+    network: default
+    bootDiskType: pd-standard
+    # End: GCE resource parameters
+
+    # Begin: Aerospike resource parameters
+    numLocalSSDs: 2
+    aerospikeVersion: 3.6.4
+    useShadowDisk: true

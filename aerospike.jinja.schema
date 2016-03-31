@@ -1,0 +1,50 @@
+mports:
+  - name: deployment_coordinator.jinja
+    path: common/deployment_coordinator.jinja
+  - name: path_utils.jinja
+    path: common/path_utils.jinja
+  - name: common.py
+    path: common/common.py
+  - name: default.py
+    path: common/default.py
+  - name: vm_instance.py
+    path: common/vm_instance_nvme.py
+  - name: vm_multiple_instances.py
+    path: common/vm_multiple_instances.py
+  - path: aerospike.jinja
+
+
+required:
+  - zone
+  - numReplicas
+  - machineType
+  - network
+
+properties:
+  zone:
+    type: string
+    default: us-central1-f
+    x-googleProperty:
+      type: GCE_ZONE
+
+  numReplicas:
+    type: integer
+    default: 2
+    minimum: 1
+    maximum: 10
+
+  machineType:
+    type: string
+    default: n1-standard-1
+    x-googleProperty:
+      type: GCE_MACHINE_TYPE
+      zoneProperty: zone
+      gceMachineType:
+        minCpu: 1
+        minRamGb: 3.5
+
+  network:
+    type: string
+    x-googleProperty:
+      type: GCE_NETWORK
+
