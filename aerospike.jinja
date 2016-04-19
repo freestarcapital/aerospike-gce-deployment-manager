@@ -23,11 +23,10 @@
 {% set numReplicas = properties["numReplicas"] %}
 {% set machineType = properties["machineType"] %}
 {% set bootDiskType = properties["bootDiskType"] %}
-{% set dataDiskSuffix = "shadow-data" %}
-{% set dataDiskName = namePrefix ~ dataDiskSuffix %}
+{% set shadowDiskSuffix = "shadow-data" %}
+{% set dataDiskSuffix = "data" %}
 {% set numLocalSSDs = properties["numLocalSSDs"] %}
-{% set ephemeralDiskSuffix = "vm-data" %}
-{% set ephemeralDiskName = namePrefix ~ ephemeralDiskSuffix %}
+{% set ephemeralDiskSuffix = "local-data" %}
 {% set aerospikeVersion = properties["aerospikeVersion"] %}
 
 {% macro hostname(prefix, id) -%}
@@ -41,6 +40,14 @@
 {%- endmacro %}
 
 resources:
+- type: compute.v1.firewall
+  name: aerospike-firewall
+  properties:
+    sourceRanges: [ "0.0.0.0/0" ]
+    allowed:
+      - IPProtocol: tcp
+        ports: [ "3000" ]
+
 - type: vm_multiple_instances.py
   name: {{ namePrefix }}
   properties:
@@ -48,20 +55,30 @@ resources:
     machineType: {{ machineType }}
     network: {{ network }}
     numberOfVMReplicas: {{ numReplicas }}
-    sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-dev/global/images/aerospike-signed-image-2016-03-31
+    sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-dev/global/images/aerospike-signed-image-2016-04-01
     canIpForward: true
     bootDiskType: {{ bootDiskType }}
     localSSDs: {{ numLocalSSDs }}
     {% if properties['useShadowDisk'] %}
     disks:
         {% for n in range(numLocalSSDs) %}
-      - deviceName: {{ dataDiskSuffix + '-' +n|string }}
+      - deviceName: {{ shadowDiskSuffix + '-' +n|string }}
         type: PERSISTENT
         diskType: pd-ssd
         diskSizeGb: 375 # Match non-persistent store size
         boot: False
         autoDelete: False
         {% endfor %}
+    {% elif properties['diskSize'] %}
+    disks:
+      {% for diskSize in properties['diskSize'] %}
+      - deviceName: {{ dataDiskSuffix + '-' + diskSize|string }}
+        type: PERSISTENT
+        diskType: pd-ssd
+        diskSizeGb: {{ diskSize }}
+        boot: False
+        autoDelete: False
+      {% endfor %}
     {% endif %}
     tags:
       items:

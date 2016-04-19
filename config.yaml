@@ -32,6 +32,9 @@ resources:
     # End: GCE resource parameters
 
     # Begin: Aerospike resource parameters
-    numLocalSSDs: 2
-    aerospikeVersion: 3.7.1
-    useShadowDisk: true
+    numLocalSSDs: 1
+    useShadowDisk: false
+#    diskSize:
+#      - 50
+#      - 100
+    aerospikeVersion: 3.7.5
