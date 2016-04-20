@@ -11,7 +11,7 @@ Create a project in Google Compute Engine
 Enable Deployment Manager API for your project: https://console.cloud.google.com/flows/enableapi?apiid=deploymentmanager
 or from API Manager and enable `Google Cloud Deployment Manager API` and `Google Cloud Deployment Manager V2 API`
 
-Download, install and configure `gcloud` from https://cloud.google.com/sdk/#Quick\_Start
+Download, install and configure `gcloud` from https://cloud.google.com/sdk/#Quick_Start
 
 See the following section on how to configure your cluster.
 
@@ -35,7 +35,7 @@ Edit config.yaml and aerospike.conf.jinja with parameters to your liking
     * Limit of 4 in us-cental1-a and europse-west1-b. See [this page](https://cloud.google.com/compute/docs/disks/#localssds) for more details
 	* Shared core (f1 and g1) are not permitted local SSDs
 * aerospikeVersion: The version of Aerospike to install/deploy
-* useShadowDisk: Whether to also provision network SSD disks to use as [Shadow Devices](http://www.aerospike.com/docs/deploy_guides/aws/recommendations/#shadow-device-configuration)
+* useShadowDisk: Whether to also provision network SSD disks to use as [Shadow Devices](http://www.aerospike.com/docs/deploy_guides/aws/recommendations/#shadow-device-configuration). Shadow Disks are the same size and count as local SSDs.
 * diskSize: A list of persistent SSD disks to deploy. This option is mutually exclusive with `useShadowDisk`. `useShadowDisk` takes precendence if both are defined.
 
 # Package description
