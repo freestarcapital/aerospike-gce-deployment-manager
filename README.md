@@ -58,3 +58,18 @@ These files are user-configurable templates. Please change these to your require
 * aerospike.conf.jinja - This is your aerospike namespace file. Change everything within the macro statement
 to reflect the namespace definition for your cluster.
 * config.yaml - This is your config for your cluster in GCE. Change the parameters to match the requirements for your cluster.
+
+# Performance
+
+We recommend using local NVME SSDs whereever high IOPS are needed. 
+SSD persistent disks reach maximum performance at 500GB, with 15k IOPS and 240MB/s throughput. This is with systems with at least 4 cores.
+Systems with 1 or 2 cores have lower limits. See [this page](https://cloud.google.com/compute/docs/disks/performance#egress_performance_cap).
+
+There appears to be a 400MB/s throughput limit per nvme device. That means with 4k blocks, it's 100k IOPS.
+
+After the device is filled (Garbage collecting), IOPS drops to around 40k (~160MB/s with 4k blocks).
+
+Command used:
+    fio --filename=/dev/nvme0n1 --direct=1 --rw=randrw --refill_buffers --norandommap \
+	--randrepeat=0 --ioengine=libaio --bs=4k --rwmixwrite=100 --iodepth=256 --numjobs=1 --runtime=3900 --time_based \
+	--group_reporting --name=4ktest
