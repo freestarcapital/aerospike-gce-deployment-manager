@@ -65,7 +65,8 @@ We recommend using local NVME SSDs whereever high IOPS are needed.
 SSD persistent disks reach maximum performance at 500GB, with 15k IOPS and 240MB/s throughput. This is with systems with at least 4 cores.
 Systems with 1 or 2 cores have lower limits. See [this page](https://cloud.google.com/compute/docs/disks/performance#egress_performance_cap).
 
-There appears to be a 400MB/s throughput limit per nvme device. That means with 4k blocks, it's 100k IOPS.
+There appears to be a ~400MB/s throughput limit. That means with 4k blocks, it's 100k IOPS.
+![IO stats](gce_performance.png)
 
 After the device is filled (Garbage collecting), IOPS drops to around 40k (~160MB/s with 4k blocks).
 
