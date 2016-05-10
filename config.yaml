@@ -33,7 +33,7 @@ resources:
 
     # Begin: Aerospike resource parameters
     numLocalSSDs: 1
-    useShadowDisk: false
+    useShadowDevice: false
 #    diskSize:
 #      - 50
 #      - 100

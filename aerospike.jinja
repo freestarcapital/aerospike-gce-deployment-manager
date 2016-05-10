@@ -14,7 +14,7 @@
 # Aerospike Server definition
 #
 
-{% import 'aerospike.conf.jinja' as aerospike %}
+{% import 'namespace.jinja' as aerospike %}
 
 {% set namePrefix = properties["namePrefix"] %}
 {% set network = properties["network"] %}
@@ -59,7 +59,7 @@ resources:
     canIpForward: true
     bootDiskType: {{ bootDiskType }}
     localSSDs: {{ numLocalSSDs }}
-    {% if properties['useShadowDisk'] %}
+    {% if properties['useShadowDevice'] %}
     disks:
         {% for n in range(numLocalSSDs) %}
       - deviceName: {{ shadowDiskSuffix + '-' +n|string }}

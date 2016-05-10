@@ -11,9 +11,13 @@ Create a project in Google Compute Engine
 Enable Deployment Manager API for your project: https://console.cloud.google.com/flows/enableapi?apiid=deploymentmanager
 or from API Manager and enable `Google Cloud Deployment Manager API` and `Google Cloud Deployment Manager V2 API`
 
-Download, install and configure `gcloud` from https://cloud.google.com/sdk/#Quick_Start
+Download and install `gcloud` from https://cloud.google.com/sdk/
 
-See the following section on how to configure your cluster.
+Configure `gcloud` for your GCE project
+
+    ie: gcloud init
+
+See the next section on how to configure your cluster.
 
 Run `deploy.sh` and pass in a name for your deployment. This will deploy your cluster in GCE.
 
@@ -21,7 +25,7 @@ Run `deploy.sh` and pass in a name for your deployment. This will deploy your cl
 
 # Configuration
 
-Edit config.yaml and aerospike.conf.jinja with parameters to your liking
+Edit config.yaml and namespace.jinja with parameters to your liking
 
 ## config.yaml
 
@@ -35,8 +39,8 @@ Edit config.yaml and aerospike.conf.jinja with parameters to your liking
     * Limit of 4 in us-cental1-a and europse-west1-b. See [this page](https://cloud.google.com/compute/docs/disks/#localssds) for more details
 	* Shared core (f1 and g1) are not permitted local SSDs
 * aerospikeVersion: The version of Aerospike to install/deploy
-* useShadowDisk: Whether to also provision network SSD disks to use as [Shadow Devices](http://www.aerospike.com/docs/deploy_guides/aws/recommendations/#shadow-device-configuration). Shadow Disks are the same size and count as local SSDs.
-* diskSize: A list of persistent SSD disks to deploy. This option is mutually exclusive with `useShadowDisk`. `useShadowDisk` takes precendence if both are defined.
+* useShadowDevice: Whether to also provision network SSD disks to use as [Shadow Devices](http://www.aerospike.com/docs/deploy_guides/aws/recommendations/#shadow-device-configuration). Shadow Disks are the same size and count as local SSDs.
+* diskSize: A list of persistent SSD disks to deploy. This option is mutually exclusive with `useShadowDevice`. `useShadowDevice` takes precendence if both are defined.
 
 # Package description
 
@@ -55,9 +59,9 @@ These files are provided to ease deployment. Do not change these unless you real
 
 These files are user-configurable templates. Please change these to your requirements.
 
-* aerospike.conf.jinja - This is your aerospike namespace file. Change everything within the macro statement
+* namespace.jinja - This is your aerospike namespace file. Change everything within the macro statement
 to reflect the namespace definition for your cluster.
-* config.yaml - This is your config for your cluster in GCE. Change the parameters to match the requirements for your cluster.
+* config.yaml - This is your cluster's configuration in GCE. Change the parameters to match the requirements for your cluster.
 
 # Performance
 

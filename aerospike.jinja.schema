@@ -8,7 +8,7 @@ imports:
   - name: vm_multiple_instances.py
     path: gcp/vm_multiple_instances.py
   - path: aerospike.jinja
-  - path: aerospike.conf.jinja
+  - path: namespace.jinja
 
 
 required:
