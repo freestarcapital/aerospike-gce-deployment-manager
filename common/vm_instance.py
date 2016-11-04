@@ -11,10 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Changes: 2016/03/30 r.guo@aerospike.com
-# - Changed scratch disk to NVME interface
-# 
 """Creates an Instance VM with common defaults."""
 # pylint: disable=g-import-not-at-top
 import copy
@@ -34,6 +30,7 @@ INSTANCE_NAME = default.INSTANCE_NAME
 MACHINETYPE = default.MACHINETYPE
 METADATA = default.METADATA
 NETWORK = default.NETWORK
+SUBNETWORK = default.SUBNETWORK
 NO_SCOPE = default.NO_SCOPE
 PROJECT = default.PROJECT
 PROVIDE_BOOT = default.PROVIDE_BOOT
@@ -43,6 +40,8 @@ TAGS = default.TAGS
 ZONE = default.ZONE
 AUTODELETE_BOOTDISK = 'bootDiskAutodelete'
 STATIC_IP = 'staticIP'
+NAT_IP = 'natIP'
+HAS_EXTERNAL_IP = 'hasExternalIP'
 
 # Defaults used for modules that imports this one
 DEFAULT_DISKTYPE = 'pd-standard'
@@ -53,6 +52,7 @@ DEFAULT_PROVIDE_BOOT = True
 DEFAULT_BOOTDISKSIZE = 10
 DEFAULT_AUTODELETE_BOOTDISK = True
 DEFAULT_STATIC_IP = False
+DEFAULT_HAS_EXTERNAL_IP = True
 DEFAULT_DATADISKSIZE = 500
 DEFAULT_ZONE = 'us-central1-f'
 DEFAULT_PERSISTENT = 'PERSISTENT'
@@ -101,7 +101,9 @@ def GenerateComputeVM(context):
   provide_boot = prop.setdefault(PROVIDE_BOOT, DEFAULT_PROVIDE_BOOT)
   tags = prop.setdefault(TAGS, dict([('items', [])]))
   zone = prop.setdefault(ZONE, DEFAULT_ZONE)
+  has_external_ip = prop.get(HAS_EXTERNAL_IP, DEFAULT_HAS_EXTERNAL_IP)
   static_ip = prop.get(STATIC_IP, DEFAULT_STATIC_IP)
+  nat_ip = prop.get(NAT_IP, None)
   if provide_boot:
     dev_mode = DEVIMAGE in prop and prop[DEVIMAGE]
     src_image = common.MakeC2DImageLink(prop[SRCIMAGE], dev_mode)
@@ -115,6 +117,10 @@ def GenerateComputeVM(context):
     disks = AppendLocalSSDDisks(context, disks, local_ssd)
   machine_type = common.MakeLocalComputeLink(context, default.MACHINETYPE)
   network = common.MakeGlobalComputeLink(context, default.NETWORK)
+  subnetwork = ''
+  if default.SUBNETWORK in prop:
+    subnetwork = common.MakeSubnetworkComputeLink(context, default.SUBNETWORK)
+
   # To be consistent with Dev console and gcloud, service accounts need to be
   #  explicitly disabled
   remove_scopes = prop[NO_SCOPE] if NO_SCOPE in prop else False
@@ -123,31 +129,53 @@ def GenerateComputeVM(context):
   else:  # Make sure there is a default service account
     prop.setdefault(SERVICE_ACCOUNTS, copy.deepcopy(DEFAULT_SERVICE_ACCOUNT))
 
-  # pyformat: disable
-  resource = [
-      {
-          'name': vm_name,
-          'type': default.INSTANCE,
-          'properties': {
-              'zone': zone,
-              'machineType': machine_type,
-              'canIpForward': can_ip_fwd,
-              'disks': disks,
-              'networkInterfaces': [{
-                  'network': network,
-                  'accessConfigs': [{'name': default.EXTERNAL,
-                                     'type': default.ONE_NAT}]
-              }],
-              'tags': tags,
-              'metadata': metadata,
-          }
-      }
-  ]
-  # pyformat: enable
+  resource = []
 
-  if static_ip:
-    address_resource = MakeStaticAddressAndUpdate(resource[0])
-    resource.append(address_resource)
+  access_configs = []
+  if has_external_ip:
+    access_config = {'name': default.EXTERNAL, 'type': default.ONE_NAT}
+    access_configs.append(access_config)
+    if static_ip and nat_ip:
+      raise common.Error(
+          'staticIP=True and natIP cannot be specified at the same time')
+    if static_ip:
+      address_resource, nat_ip = MakeStaticAddress(vm_name, zone)
+      resource.append(address_resource)
+    if nat_ip:
+      access_config['natIP'] = nat_ip
+  else:
+    if static_ip:
+      raise common.Error('staticIP cannot be True when hasExternalIP is False')
+    if nat_ip:
+      raise common.Error(
+          'natIP must not be specified when hasExternalIP is False')
+
+  network_interfaces = []
+  if subnetwork:
+    network_interfaces.insert(0, {
+        'network': network,
+        'subnetwork': subnetwork,
+        'accessConfigs': access_configs
+    })
+  else:
+    network_interfaces.insert(0, {
+        'network': network,
+        'accessConfigs': access_configs
+    })
+
+  resource.insert(0, {
+      'name': vm_name,
+      'type': default.INSTANCE,
+      'properties': {
+          'zone': zone,
+          'machineType': machine_type,
+          'canIpForward': can_ip_fwd,
+          'disks': disks,
+          'networkInterfaces': network_interfaces,
+          'tags': tags,
+          'metadata': metadata,
+      }
+  })
 
   # Pass through any additional property to the VM
   if SERVICE_ACCOUNTS in prop:
@@ -155,10 +183,8 @@ def GenerateComputeVM(context):
   return resource
 
 
-def MakeStaticAddressAndUpdate(resource):
-  """Updates the VM resource with static IP and returns the address resource."""
-  vm_name = resource['name']
-  zone = resource['properties']['zone']
+def MakeStaticAddress(vm_name, zone):
+  """Creates a static IP address resource; returns it and the natIP."""
   address_name = vm_name + '-address'
   address_resource = {
       'name': address_name,
@@ -168,10 +194,7 @@ def MakeStaticAddressAndUpdate(resource):
           'region': common.ZoneToRegion(zone),
       },
   }
-  network_interface = resource['properties']['networkInterfaces'][0]
-  network_interface['accessConfigs'][0]['natIP'] = ('$(ref.%s.address)' %
-                                                    address_name)
-  return address_resource
+  return (address_resource, '$(ref.%s.address)' % address_name)
 
 
 def PrependBootDisk(disk_list, name, disk_type, disk_size, src_image,
@@ -202,7 +225,7 @@ def AppendLocalSSDDisks(context, disk_list, num_of_local_ssd):
     local_ssd_disks.append({
         'deviceName': 'local-ssd-%s' % i,
         'type': SCRATCH,
-        'interface': 'NVME',
+        'interface': 'SCSI',
         'mode': 'READ_WRITE',
         'autoDelete': True,
         'initializeParams': {'diskType': common.LocalComputeLink(
@@ -291,8 +314,10 @@ def AddServiceEndpointIfNeeded(context):
           'name': name,
           'type': default.ENDPOINT,
           'properties': {
-              'address': address,
-              'visibility': {
+              'addresses': [
+                  {'address': address}
+              ],
+              'dnsIntegration': {
                   'networks': [network]
               }
           }
@@ -309,14 +334,21 @@ def GenerateResourceList(context):
   return resources
 
 
-def GenerateOutputList(unused_context, resource_list):
+def GenerateOutputList(context, resource_list):
   """Returns list of outputs generated by this module."""
   vm_res = resource_list[0]
   outputs = [{
-      'name': 'ip',
-      'value': ('$(ref.%s.networkInterfaces[0].accessConfigs[0].natIP)' %
-                vm_res['name']),
+      'name': 'internalIP',
+      'value': '$(ref.%s.networkInterfaces[0].networkIP)' % vm_res['name'],
   }]
+  has_external_ip = context.properties.get(HAS_EXTERNAL_IP,
+                                           DEFAULT_HAS_EXTERNAL_IP)
+  if has_external_ip:
+    outputs.append({
+        'name': 'ip',
+        'value': ('$(ref.%s.networkInterfaces[0].accessConfigs[0].natIP)' %
+                  vm_res['name']),
+    })
   return outputs
 
 

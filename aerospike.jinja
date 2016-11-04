@@ -14,8 +14,6 @@
 # Aerospike Server definition
 #
 
-{% import 'namespace.jinja' as aerospike %}
-
 {% set namePrefix = properties["namePrefix"] %}
 {% set network = properties["network"] %}
 {% set project = env["project"] %}
@@ -28,6 +26,7 @@
 {% set numLocalSSDs = properties["numLocalSSDs"] %}
 {% set ephemeralDiskSuffix = "local-data" %}
 {% set aerospikeVersion = properties["aerospikeVersion"] %}
+{% set namespace = properties["namespace"] %}
 
 {% macro hostname(prefix, id) -%}
 {{ "%s-%d-vm"|format(prefix, id) }}
@@ -55,7 +54,7 @@ resources:
     machineType: {{ machineType }}
     network: {{ network }}
     numberOfVMReplicas: {{ numReplicas }}
-    sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-dev/global/images/aerospike-signed-image-2016-04-01
+    sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-dev/global/images/aerospike-image-2016-11-03
     canIpForward: true
     bootDiskType: {{ bootDiskType }}
     localSSDs: {{ numLocalSSDs }}
@@ -87,13 +86,32 @@ resources:
 
     metadata:
       items:
-      - key: AEROSPIKE_VERSION
-        value: {{ aerospikeVersion }}
+      - key: startup-script
+        value: |
+          #!/bin/bash
+          AEROSPIKE_CLUSTER=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/AEROSPIKE_CLUSTER)
+          AEROSPIKE_CONF=/etc/aerospike/aerospike.conf
+          AEROSPIKE_NS=$(curl -sL -H "Metadata-Flavor: Google" metadata/computeMetadata/v1beta1/instance/attributes/AEROSPIKE_NS)
+          IFS='|' read -ra ASD_CLUSTER <<< "$AEROSPIKE_CLUSTER"
+          mv /etc/aerospike/sample/aerospike_mesh.conf $AEROSPIKE_CONF
+          sed -i '/.*mesh-sedd-address-port/d' $AEROSPIKE_CONF
+          for I in "${ASD_CLUSTER[@]}"; do
+            IP=$(python -c "import socket; print socket.gethostbyname(\"${I}\")")
+            sed -i "/interval/i \\\t\tmesh-seed-address-port $IP 3002" $AEROSPIKE_CONF
+          done
+            #NAMESPACE
+          if grep -xq "$AEROSPIKE_NS" $AEROSPIKE_CONF; then
+            : # do nothing
+          else
+            echo -e "$AEROSPIKE_NS" >> $AEROSPIKE_CONF
+          fi
+          /opt/aerospike/balance_scsi_mq
+          service aerospike restart
+      - key: AEROSPIKE_NS
+        value: |
+          {{ namespace | indent(10) }}
       - key: AEROSPIKE_CLUSTER
         value: "{{ hostnames() | trim }}"
-      - key: AEROSPIKE_CONF
-        value: |
-           {{ aerospike.GenerateNamespaceConf() | indent(12) }}
 
 outputs:
   - name: initialPrimarySelfLink

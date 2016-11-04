@@ -5,36 +5,49 @@
 # The Aerospike deployment here consists of the following replica pool:
 #  * Aerospike server instances
 #
-# A gcp Aerospike replicaset deployment will have 2 Aerospike instances
+# A gcp Aerospike replicaset deployment will have 3 Aerospike instances
 
 imports:
 - path: aerospike.jinja
 - name: default.py
-  path: gcp/default.py
+  path: common/default.py
 - name: common.py
-  path: gcp/common.py
+  path: common/common.py
 - name: vm_instance.py
-  path: gcp/vm_instance_nvme.py
+  path: common/vm_instance.py
 - name: vm_multiple_instances.py
-  path: gcp/vm_multiple_instances.py
+  path: common/vm_multiple_instances.py
 
 resources:
 - name: aerospike_server
   type: aerospike.jinja
   properties:
     # Begin: GCE resource parameters
-    numReplicas: 2
+    numReplicas: 3
     namePrefix: aerospike
-    zone: us-central1-f
-    machineType: n1-standard-1
+    zone: us-central1-a
+    machineType: n1-standard-2
     network: default
     bootDiskType: pd-standard
     # End: GCE resource parameters
 
     # Begin: Aerospike resource parameters
-    numLocalSSDs: 1
+    numLocalSSDs: 0
     useShadowDevice: false
-#    diskSize:
-#      - 50
+    diskSize:
+      - 50
 #      - 100
-    aerospikeVersion: 3.7.5
+    namespace: |
+        namespace mem2ssd {
+            replication-factor 2
+            memory-size 6G
+            obj-size-hist-max 10000
+            default-ttl 0d # 30 days, use 0 to never expire/evict.
+            storage-engine device {
+                device /dev/disk/by-id/google-local-ssd-0
+                write-block-size 1M
+                data-in-memory false # Store indices in memory, data on SSDs.
+                post-write-queue 2048
+                max-write-cache 2047M
+            }
+        }

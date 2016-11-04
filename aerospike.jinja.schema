@@ -1,14 +1,13 @@
 imports:
   - name: common.py
-    path: gcp/common.py
+    path: common/common.py
   - name: default.py
-    path: gcp/default.py
+    path: common/default.py
   - name: vm_instance.py
-    path: gcp/vm_instance_nvme.py
+    path: common/vm_instance.py
   - name: vm_multiple_instances.py
-    path: gcp/vm_multiple_instances.py
+    path: common/vm_multiple_instances.py
   - path: aerospike.jinja
-  - path: namespace.jinja
 
 
 required:
@@ -28,7 +27,7 @@ properties:
     type: integer
     default: 2
     minimum: 1
-    maximum: 10
+    maximum: 40
 
   machineType:
     type: string
