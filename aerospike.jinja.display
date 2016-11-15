@@ -1,0 +1,102 @@
+description:
+  author:
+    shortDescription: Aerospike, a Mountain View, California based company is behind the Aerospike NoSQL database.
+    title: Aerospike
+    url: 'http://www.aeropsike.com/'
+  descriptionHtml:  Aerospike is an open-source distributed NoSQL database that is a fast, multithreaded key-value store. Because Aerospike is optimized for flash memory and RAM, it can be configured to run as a lightning-quick in-memory database or, to scale with the price and performance of flash memory, as a hybrid database that stores its indexes in RAM and its data on SSDs.
+  logo: '@media/aerospike_store.png'
+  tagline: Flash-optimized, in-memory key-value NoSQL database
+  title: Aerospike Community Edition
+  url: http://www.aerospike.com/products/#products-community
+  version: Aerospike CE 3.10.0.3
+  architectureDescription: Aerospike will be deployed in a cluster of Compute Engine instances. Each instance will use a boot disk and separate data disk for Aerospike data and logs.  Aerospike Management Console will also be installed
+  documentations:
+    - title: Get started with Aerospike
+      description: Learn about Getting Started with Aerospike
+      url: http://www.aerospike.com/docs
+      destinations:
+        - DESTINATION_POST_DEPLOY
+    - title: Aerospike Client Libraries
+      description: Learn about Getting Started with Aerospike Client Libraries
+      url: http://www.aerospike.com/develop
+      destinations:
+        - DESTINATION_POST_DEPLOY
+  softwareGroups:
+    - type: SOFTWARE_GROUP_OS
+      software:
+        - title: Ubuntu 14
+    - software:
+        - title: Apache HTTP Server
+          version: 2.4.10
+          licenseTitle: APL 2.0
+          licenseUrl: http://www.apache.org/licenses/LICENSE-2.0
+    - software:
+        - title: Aerospike Server Community
+          version: 3.10.0.3
+          licenseTitle: APGLv3 Aerospike
+          licenseUrl: http://www.gnu.org/licenses/agpl.html
+input:
+  properties:
+    - name: zone
+      title: Zone
+      tooltip: The zone determines what computing resources are available and where your data is stored and used. <a href="https://cloud.google.com/compute/docs/zones">Learn more</a>
+    - name: machineType
+      title: Machine Type
+      tooltip: The machine type determines the CPU and memory your instance will have. <a href="https://cloud.google.com/compute/docs/machine-types">Learn more</a>
+    - name: numReplicas
+      title: Cluster node count
+      tooltip: Number of Aerospike server nodes in the cluster.
+      validation: Choose a nubmer between 1 and 10.
+    - name: diskSize
+      title: Data disk size in GB
+      section: DISK
+    - numLocalSSDs:
+      title: Numer of local SSDs
+      section: DISK
+      tooltip: Local SSDs are very performant, but comes at a fixed size of 375GB and are ephemeral
+      placeholder: 0
+    - name: bootDiskType
+      title: Boot disk type
+      placeholder: pd-standard
+      level: 1
+      section: DISK
+    - name: useShadowDevice
+      title: Use shadow device config
+      tooltip: Shadow devices have only writes mirrored to them. This enables data persistence with slower (network disk) devices, while maintaining fast read performance with the primary device (ephemeral local SSDs)
+      booleanGroup: "shadow"
+    - name: network
+      title: Network name
+      section: NETWORKING
+    - name: subnetwork
+      title: Subnetwork name
+      section: NETWORKING
+    - name: namespace
+      title: Namespace Config
+      section NAMESPACE
+  sections:
+    - name: NETWORKING
+      title: Networking
+  sections:
+    - name: DISK
+      title: Disk configurations
+      tooltip: Attach local SSDs and/or network based disks.
+  sections:
+    - name: NAMESPACE
+      title: Aerospike Namespace Config
+      tooltip: Customize your Aerospike Namespace
+
+runtime:
+  deployingMessage: Deployment can take several minutes to complete, deplending on the size of your cluster
+  primaryButton:
+    type: TYPE_GCE_VM_SSH
+    label: SSH to initial primary server
+    action: '{{ outputs().initialPrimarySelfLink }}'
+  applicationTable:
+    rows:
+      - label: Zone
+        value: '{{ properties().zone }}'
+  suggestedActions:
+    - heading: Access Aerospike Management Console
+      description: Visit <a href="http://{{ outputs().initialPrimarySelfLink }}">Aerospike Management Console</a>
+
+metadataVersion: v1test

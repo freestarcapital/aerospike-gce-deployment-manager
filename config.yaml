@@ -36,7 +36,7 @@ resources:
     useShadowDevice: false
     diskSize:
       - 50
-#      - 100
+      - 50
     namespace: |
         namespace mem2ssd {
             replication-factor 2
@@ -44,7 +44,9 @@ resources:
             obj-size-hist-max 10000
             default-ttl 0d # 30 days, use 0 to never expire/evict.
             storage-engine device {
-                device /dev/disk/by-id/google-local-ssd-0
+                #device /dev/disk/by-id/google-local-ssd-0 # local ssds
+                device /dev/disk/by-id/google-$DISK
+                device /dev/disk/by-id/google-$DISK
                 write-block-size 1M
                 data-in-memory false # Store indices in memory, data on SSDs.
                 post-write-queue 2048

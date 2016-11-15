@@ -25,7 +25,7 @@ Run `deploy.sh` and pass in a name for your deployment. This will deploy your cl
 
 # Configuration
 
-Edit config.yaml and namespace.jinja with parameters to your liking
+Edit config.yaml with parameters to your liking
 
 ## config.yaml
 
@@ -38,9 +38,9 @@ Edit config.yaml and namespace.jinja with parameters to your liking
 * numLocalSSDs: The number of local NVME SSDs to attach. Limit of up to 8
     * Limit of 4 in us-cental1-a and europse-west1-b. See [this page](https://cloud.google.com/compute/docs/disks/#localssds) for more details
 	* Shared core (f1 and g1) are not permitted local SSDs
-* aerospikeVersion: The version of Aerospike to install/deploy
 * useShadowDevice: Whether to also provision network SSD disks to use as [Shadow Devices](http://www.aerospike.com/docs/deploy_guides/aws/recommendations/#shadow-device-configuration). Shadow Disks are the same size and count as local SSDs.
 * diskSize: A list of persistent SSD disks to deploy. This option is mutually exclusive with `useShadowDevice`. `useShadowDevice` takes precendence if both are defined.
+* namespace: A text block containting your namespace config stanza
 
 # Package description
 
@@ -51,7 +51,7 @@ definition, Jinja templates, and/or python scripts. Templates can reference othe
 
 These files are provided to ease deployment. Do not change these unless you really know what you're doing.
 
-* The GCP directory contains templates provided by Google.
+* The `common` directory contains templates provided by Google.
 * aerospike.jinja is the main config for aerospike instances.
 * aerospike.jinja.schema is a validation template. Parameters are checked against this template for validation
 
@@ -59,8 +59,6 @@ These files are provided to ease deployment. Do not change these unless you real
 
 These files are user-configurable templates. Please change these to your requirements.
 
-* namespace.jinja - This is your aerospike namespace file. Change everything within the macro statement
-to reflect the namespace definition for your cluster.
 * config.yaml - This is your cluster's configuration in GCE. Change the parameters to match the requirements for your cluster.
 
 # Performance
