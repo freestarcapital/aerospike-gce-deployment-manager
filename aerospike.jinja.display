@@ -70,9 +70,6 @@ input:
     - name: subnetwork
       title: Subnetwork name
       section: NETWORKING
-    - name: namespace
-      title: Namespace Config
-      section NAMESPACE
   sections:
     - name: NETWORKING
       title: Networking
@@ -80,10 +77,6 @@ input:
     - name: DISK
       title: Disk configurations
       tooltip: Attach local SSDs and/or network based disks.
-  sections:
-    - name: NAMESPACE
-      title: Aerospike Namespace Config
-      tooltip: Customize your Aerospike Namespace
 
 runtime:
   deployingMessage: Deployment can take several minutes to complete, deplending on the size of your cluster

@@ -25,7 +25,6 @@
 {% set dataDiskSuffix = "data" %}
 {% set numLocalSSDs = properties["numLocalSSDs"] %}
 {% set aerospikeVersion = properties["aerospikeVersion"] %}
-{% set namespace = properties["namespace"] %}
 {% set disks = properties["diskSize"] %}
 
 {% macro hostname(prefix, id) -%}
@@ -37,6 +36,7 @@
   {{ hostname(namePrefix, instance) + '|' }}
 {%- endfor %}
 {%- endmacro %}
+
 
 resources:
 - type: compute.v1.firewall
@@ -78,14 +78,23 @@ resources:
         {% endfor %}
     {% elif disks %}
     disks:
-      {% for n in range(disks|count) %}
+      {% if disks is iterable %}
+        {% for n in range(disks|count) %}
       - deviceName: {{ dataDiskSuffix + '-' + n|string }}
         type: PERSISTENT
         diskType: pd-ssd
         diskSizeGb: {{ disks[n] }}
         boot: False
         autoDelete: False
-      {% endfor %}
+        {% endfor %}
+      {% else %}
+      - deviceName: {{ dataDiskSuffix }}
+        type: PERSISTENT
+        diskType: pd-ssd
+        diskSizeGb: {{ disks }}
+        boot: False
+        autoDelete: False
+      {% endif %}
     {% endif %}
     tags:
       items:
@@ -94,6 +103,15 @@ resources:
 
     metadata:
       items:
+        {% if properties['namespace'] is defined %}
+      - key: AEROSPIKE_NS
+        value: |
+          {{ properties['namespace'] | indent(10) }}
+        {% endif %}
+      - key: AEROSPIKE_CLUSTER
+        value: "{{ hostnames() | trim }}"
+      - key: AMC_PASSWORD
+        value: "$(ref.amc-password.password)"
       - key: startup-script
         value: |
           #!/bin/bash
@@ -124,13 +142,6 @@ resources:
           /opt/aerospike/balance_scsi_mq
           service aerospike restart
           
-      - key: AEROSPIKE_NS
-        value: |
-          {{ namespace | indent(10) }}
-      - key: AEROSPIKE_CLUSTER
-        value: "{{ hostnames() | trim }}"
-      - key: AMC_PASSWORD
-        value: "$(ref.amc-password.password)"
 
 outputs:
   - name: initialPrimarySelfLink
