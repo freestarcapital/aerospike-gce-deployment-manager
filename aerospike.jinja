@@ -62,7 +62,7 @@ resources:
     machineType: {{ machineType }}
     network: {{ network }}
     numberOfVMReplicas: {{ numReplicas }}
-    sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-dev/global/images/aerospike-image-2016-11-14
+    sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-dev/global/images/aerospike-image-2017-06-21
     canIpForward: true
     bootDiskType: {{ bootDiskType }}
     localSSDs: {{ numLocalSSDs }}
@@ -117,7 +117,7 @@ resources:
           #!/bin/bash
           AEROSPIKE_CLUSTER=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/AEROSPIKE_CLUSTER)
           AEROSPIKE_CONF=/etc/aerospike/aerospike.conf
-          AS_DISKS=$(curl -sL -H "Metadata-Flavor: Google" metadata/computeMetadata/v1beta1/instance/attributes/ATTACHED_DISKS)
+          #AS_DISKS=$(curl -sL -H "Metadata-Flavor: Google" metadata/computeMetadata/v1beta1/instance/attributes/ATTACHED_DISKS)
           IFS='|' read -ra ASD_CLUSTER <<< "$AEROSPIKE_CLUSTER"
           cp /etc/aerospike/sample/aerospike_mesh.conf $AEROSPIKE_CONF
           #CLUSTERING
@@ -133,10 +133,10 @@ resources:
           else
             AEROSPIKE_NS=$(curl -sL -H "Metadata-Flavor: Google" metadata/computeMetadata/v1beta1/instance/attributes/AEROSPIKE_NS)
             sed -i '/namespace test/,$d' $AEROSPIKE_CONF
-            IFS=',' read -ra DISKS <<< "$AS_DISKS"
-            for DISK in "${DISKS[@]}"; do
-              AEROSPIKE_NS=$(echo -e "$AEROSPIKE_NS" | awk -v var=$DISK 'NR==1,/\$DISK/{sub(/\$DISK/,var)} 1')
-            done
+            #IFS=',' read -ra DISKS <<< "$AS_DISKS"
+            #for DISK in "${DISKS[@]}"; do
+            #  AEROSPIKE_NS=$(echo -e "$AEROSPIKE_NS" | awk -v var=$DISK 'NR==1,/\$DISK/{sub(/\$DISK/,var)} 1')
+            #done
             echo -e "$AEROSPIKE_NS" >> $AEROSPIKE_CONF
           fi
           /opt/aerospike/balance_scsi_mq

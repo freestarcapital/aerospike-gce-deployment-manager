@@ -26,31 +26,26 @@ resources:
     numReplicas: 3
     namePrefix: aerospike
     zone: us-central1-a
-    machineType: n1-standard-2
+    machineType: n1-highmem-4
     network: default
     bootDiskType: pd-standard
     # End: GCE resource parameters
 
     # Begin: Aerospike resource parameters
-    numLocalSSDs: 0
+    numLocalSSDs: 1
     useShadowDevice: false
-    diskSize: 100
+    diskSize: 0
 
 #      - 50
 #      - 50
-#    namespace: |
-#        namespace mem2ssd {
-#            replication-factor 2
-#            memory-size 6G
-#            obj-size-hist-max 10000
-#            default-ttl 0d # 30 days, use 0 to never expire/evict.
-#            storage-engine device {
-#                #device /dev/disk/by-id/google-local-ssd-0 # local ssds
-#                device /dev/disk/by-id/google-$DISK
-#                device /dev/disk/by-id/google-$DISK
-#                write-block-size 1M
-#                data-in-memory false # Store indices in memory, data on SSDs.
-#                post-write-queue 2048
-#                max-write-cache 2047M
-#            }
-#        }
+    namespace: |
+        namespace ssd {
+            replication-factor 2
+            memory-size 25G
+            default-ttl 0d # 30 days, use 0 to never expire/evict.
+            storage-engine device {
+                device /dev/disk/by-id/google-local-ssd-0 # local ssds
+                #device /dev/disk/by-id/google-$DISK
+                write-block-size 1M
+            }
+        }
