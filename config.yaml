@@ -36,8 +36,6 @@ resources:
     useShadowDevice: false
     diskSize: 0
 
-#      - 50
-#      - 50
     namespace: |
         namespace ssd {
             replication-factor 2

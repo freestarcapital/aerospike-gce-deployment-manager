@@ -14,8 +14,11 @@
 # Aerospike Server definition
 #
 
-{% set namePrefix = properties["namePrefix"] %}
+{% set namePrefix = env['deployment'] %}
 {% set network = properties["network"] %}
+{% if properties["subnetwork"] %}
+{% set subnetwork = properties["subnetwork"] %}
+{% endif %}
 {% set project = env["project"] %}
 {% set zone = properties["zone"] %}
 {% set numReplicas = properties["numReplicas"] %}
@@ -25,6 +28,7 @@
 {% set dataDiskSuffix = "data" %}
 {% set numLocalSSDs = properties["numLocalSSDs"] %}
 {% set aerospikeVersion = properties["aerospikeVersion"] %}
+{% set namespace = properties["namespace"] %}
 {% set disks = properties["diskSize"] %}
 
 {% macro hostname(prefix, id) -%}
@@ -36,7 +40,6 @@
   {{ hostname(namePrefix, instance) + '|' }}
 {%- endfor %}
 {%- endmacro %}
-
 
 resources:
 - type: compute.v1.firewall
@@ -61,6 +64,9 @@ resources:
     zone: {{ zone }}
     machineType: {{ machineType }}
     network: {{ network }}
+    {% if subnetwork %}
+    subnetwork: {{ subnetwork }}
+    {% endif %}
     numberOfVMReplicas: {{ numReplicas }}
     sourceImage: https://www.googleapis.com/compute/v1/projects/aerospike-prod/global/images/aerospike-ee-3-14-1-1-ubuntu16-2017-07-10
     canIpForward: true
@@ -72,7 +78,7 @@ resources:
       - deviceName: {{ shadowDiskSuffix + '-' +n|string }}
         type: PERSISTENT
         diskType: pd-ssd
-        diskSizeGb: 375 # Match non-persistent store size
+        diskSizeGb: {{ disks }}
         boot: False
         autoDelete: False
         {% endfor %}
@@ -88,13 +94,12 @@ resources:
         autoDelete: False
         {% endfor %}
       {% else %}
-      - deviceName: {{ dataDiskSuffix }}
+      - deviceName: {{ dataDiskSuffix|string }}
         type: PERSISTENT
         diskType: pd-ssd
         diskSizeGb: {{ disks }}
         boot: False
         autoDelete: False
-      {% endif %}
     {% endif %}
     tags:
       items:
@@ -103,25 +108,18 @@ resources:
 
     metadata:
       items:
-        {% if properties['namespace'] is defined %}
-      - key: AEROSPIKE_NS
-        value: |
-          {{ properties['namespace'] | indent(10) }}
-        {% endif %}
-      - key: AEROSPIKE_CLUSTER
-        value: "{{ hostnames() | trim }}"
-      - key: AMC_PASSWORD
-        value: "$(ref.amc-password.password)"
       - key: startup-script
         value: |
           #!/bin/bash
           AEROSPIKE_CLUSTER=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/AEROSPIKE_CLUSTER)
           AEROSPIKE_CONF=/etc/aerospike/aerospike.conf
           #AS_DISKS=$(curl -sL -H "Metadata-Flavor: Google" metadata/computeMetadata/v1beta1/instance/attributes/ATTACHED_DISKS)
+          VIRTUAL=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/network-interfaces/0/access-configs/0/external-ip)
+          AMC_PASS=$(curl -fs -H "Metadata-Flavor: Google" metadata/computeMetadata/v1/instance/attributes/AMC_PASSWORD)
           IFS='|' read -ra ASD_CLUSTER <<< "$AEROSPIKE_CLUSTER"
           cp /etc/aerospike/sample/aerospike_mesh.conf $AEROSPIKE_CONF
           #CLUSTERING
-          sed -i '/.*mesh-sedd-address-port/d' $AEROSPIKE_CONF
+          sed -i '/.*mesh-seed-address-port/d' $AEROSPIKE_CONF
           for I in "${ASD_CLUSTER[@]}"; do
             IP=$(python -c "import socket; print socket.gethostbyname(\"${I}\")")
             sed -i "/interval/i \\\t\tmesh-seed-address-port $IP 3002" $AEROSPIKE_CONF
@@ -139,9 +137,21 @@ resources:
             #done
             echo -e "$AEROSPIKE_NS" >> $AEROSPIKE_CONF
           fi
+          #AMC
+          sed -ie "s/#user = \"<user>\"/user = \"amc\"/" /etc/amc/amc.conf
+          sed -ie "s/#password = \"<pass>\"/password = \"${AMC_PASS}\"/" /etc/amc/amc.conf
           /opt/aerospike/balance_scsi_mq
           service aerospike restart
-          
+          service amc restart
+      {% if namespace %}
+      - key: AEROSPIKE_NS
+        value: |
+          {{ namespace | indent(10) }}
+      {% endif %}
+      - key: AEROSPIKE_CLUSTER
+        value: "{{ hostnames() | trim }}"
+      - key: AMC_PASSWORD
+        value: "$(ref.amc-password.password)"
 
 outputs:
   - name: initialPrimarySelfLink
@@ -152,4 +162,6 @@ outputs:
     value: {{ hostname(namePrefix, 1) }}
   - name: amcProxyPassword
     value: "$(ref.amc-password.password)"
+  - name: primaryIP
+    value: "$(ref.{{ namePrefix }}-1-vm.networkInterfaces[0].accessConfigs[0].natIP)"
 

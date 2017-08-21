@@ -21,19 +21,23 @@ required:
 properties:
   zone:
     type: string
-    default: us-central1-f
+    default: us-central1-a
     x-googleProperty:
       type: GCE_ZONE
 
   numReplicas:
     type: integer
-    default: 2
+    default: 3
     minimum: 1
     maximum: 40
 
+  namePrefix:
+    type: string
+    default: aerospike
+
   machineType:
     type: string
-    default: n1-standard-1
+    default: n1-standard-2
     x-googleProperty:
       type: GCE_MACHINE_TYPE
       zoneProperty: zone
@@ -41,8 +45,22 @@ properties:
         minCpu: 1
         minRamGb: 3.5
 
+  bootDiskType:
+    type: string
+    default: pd-standard
+
+  useShadowDevice:
+    type: boolean
+    default: false
+
+  numLocalSSDs:
+    type: integer
+    default: 0
+    minimum: 0
+    maximum: 8
+
   network:
     type: string
+    default: default
     x-googleProperty:
       type: GCE_NETWORK
-
