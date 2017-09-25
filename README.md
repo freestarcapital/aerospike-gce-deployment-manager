@@ -17,6 +17,10 @@ Configure `gcloud` for your GCE project
 
     ie: gcloud init
 
+You may need to update the gcloud sdk:
+
+    gcloud components update core
+
 See the next section on how to configure your cluster.
 
 Run `deploy.sh` and pass in a name for your deployment. This will deploy your cluster in GCE.
