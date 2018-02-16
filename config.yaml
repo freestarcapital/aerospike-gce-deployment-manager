@@ -23,9 +23,9 @@ resources:
   type: aerospike.jinja
   properties:
     # Begin: GCE resource parameters
-    numReplicas: 3
+    numReplicas: 1
     namePrefix: aerospike
-    zone: us-central1-a
+    zone: us-central1-b
     machineType: n1-highmem-4
     network: default
     bootDiskType: pd-standard
