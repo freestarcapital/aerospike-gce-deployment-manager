@@ -1,3 +1,6 @@
+### freestar.io - see specific freestar install info
+* [Freestar confluence docs](https://freestar.atlassian.net/wiki/spaces/PD/pages/95715329/Aerospike+installation)
+
 # gce-deployment-manager
 
 Google Deployment Manager scripts and templates for deploying Aerospike CE on Google Compute Engine (GCE)

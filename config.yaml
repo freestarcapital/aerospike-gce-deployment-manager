@@ -47,3 +47,14 @@ resources:
                 write-block-size 1M
             }
         }
+        namespace ml {
+           replication-factor 2
+           memory-size 4G
+           default-ttl 0d # 30 days, use 0 to never expire/evict.
+           storage-engine memory
+        }
+
+    security: |
+      security {
+          enable-security true
+      }
