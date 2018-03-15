@@ -23,9 +23,9 @@ resources:
   type: aerospike.jinja
   properties:
     # Begin: GCE resource parameters
-    numReplicas: 1
-    namePrefix: aerospike
-    zone: us-central1-b
+    numReplicas: 3
+    namePrefix: aerospike-cluster
+    zone: us-central1-c
     machineType: n1-highmem-4
     network: default
     bootDiskType: pd-standard
@@ -39,14 +39,22 @@ resources:
     ## NOTE THAT WE MANUALLY ADDED 500G SSD DRIVE FOR STORAGE OF mlssd and dev-mlssd
     ## THUS THEY ARE COMMENTED OUT HERE. ADD THE SSD DRIVE VIA THE GCP INTERFACE AND THEN UNCOMMENT AND RESTART
     namespace: |
-        ## SCRATCH DISK STORAGE DEFAULT 
-        namespace ssd {
+        ## GENERAL NAMESPACE
+        namespace gen {
             replication-factor 2
-            memory-size 25G
+            memory-size 100G
             default-ttl 0d # 30 days, use 0 to never expire/evict.
             storage-engine device {
-                device /dev/disk/by-id/google-local-ssd-0 # local ssds
-                #device /dev/disk/by-id/google-$DISK
+                device dev/disk/by-id/google-local-ssd-0-part1
+                write-block-size 1M
+            }
+        }
+        namespace dev-gen {
+            replication-factor 2
+            memory-size 10G
+            default-ttl 0d
+            storage-engine device {
+                device /dev/disk/by-id/google-local-ssd-0-part9
                 write-block-size 1M
             }
         }
@@ -54,43 +62,38 @@ resources:
         ## IN MEMORY STORAGE
         namespace ml {
            replication-factor 2
+           memory-size 10G
+           default-ttl 0d # 30 days, use 0 to never expire/evict.
+           storage-engine memory
+        }        
+        namespace dev-ml {
+           replication-factor 2
            memory-size 4G
            default-ttl 0d # 30 days, use 0 to never expire/evict.
            storage-engine memory
         }
-        #namespace dev-ml {
-        #   replication-factor 2
-        #   memory-size 4G
-        #   default-ttl 0d # 30 days, use 0 to never expire/evict.
-        #   storage-engine memory
-        #}
 
-        ## SSD DRIVE THAT WE ADDED - THIS MAY CAUSE ISSUES WITH BUILD AS IT DOESN'T LIKELY EXIST YET
+        ## MLSSD STORAGE 
         namespace mlssd {
            replication-factor 2
-           memory-size 100G ## THIS IS CAPACITY - NOT ACTUALLY MEMORY 
-           default-ttl 0d   ## 30 days, use 0 to never expire/evict.
+           memory-size 100G 
+           default-ttl 0d # 30 days, use 0 to never expire/evict.
            storage-engine device {
-              device /dev/disk/by-id/google-aerospike-data-disc # local ssds
-              #device /dev/disk/by-id/google-$DISK
-              write-block-size 128K
+              device /dev/disk/by-id/google-local-ssd-0-part5
+              write-block-size 1M
            }
         }
 
-        #namespace dev-mlssd {
-        #   replication-factor 2
-        #   memory-size 10G ## THIS IS CAPACITY - NOT ACTUALLY MEMORY 
-        #   default-ttl 0d   ## 30 days, use 0 to never expire/evict.
-        #   storage-engine device {
-        #      device /dev/disk/by-id/google-aerospike-data-disc # local ssds
-        #      #device /dev/disk/by-id/google-$DISK
-        #      write-block-size 128K
-        #   }
-        #}
+        namespace dev-mlssd {
+           replication-factor 2
+           memory-size 10G 
+           default-ttl 0d # 30 days, use 0 to never expire/evict.
+           storage-engine device {
+              device /dev/disk/by-id/google-local-ssd-0-part7
+              write-block-size 1M
+           }
+        }
 
-        # UNCOMMENT AND RESTART TO TURN SECURITY ON
-        # YOU WILL NEED TO SET UP USER/PASS/ROLE MANUALL
-        #security: |
-        #  security {
-        #  enable-security true
-        #}
+        security {
+          enable-security true
+        }

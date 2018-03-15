@@ -1,0 +1,13 @@
+label: dos
+label-id: 0x543c702f
+device: /dev/sdb
+unit: sectors
+
+/dev/sdb1 : start=         256, size=    26214400, type=83
+/dev/sdb2 : start=    26214656, size=    68157440, type=5
+/dev/sdb5 : start=    26214912, size=    26214400, type=83
+/dev/sdb6 : start=    52429568, size=    26214400, type=83
+/dev/sdb7 : start=    78644224, size=     2621440, type=83
+/dev/sdb8 : start=    81265920, size=     2621440, type=83
+/dev/sdb9 : start=    83887616, size=    10484480, type=83
+
