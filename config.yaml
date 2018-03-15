@@ -94,6 +94,7 @@ resources:
            }
         }
 
-        security {
-          enable-security true
-        }
+        ## SECURITY WILL BE SETUP AFTER INITIAL PASSWORD IS SET
+        #SEC#security {
+        #SEC#  enable-security true
+        #SEC#}

@@ -160,6 +160,15 @@ resources:
           /opt/aerospike/balance_scsi_mq
           service aerospike restart
           service amc restart
+          ## SET OUR DEFAULT PASSWORDS PASSWORD 
+          echo "set password ${AMC_PASS} for admin" > /tmp/users.txt
+          /usr/bin/aql -f /tmp/users.txt
+          ## ENABLE SECURITY IN THE CONF 
+          cp /etc/aerospike/aerospike.conf /etc/aerospike/aerospike.conf.orig
+          sed s/#SEC#// /etc/aerospike/aerospike.conf.orig > /etc/aerospike/aerospike.conf
+          ## RESTART THE SERVICE
+          service aerospike restart
+          service amc restart	  
       {% if namespace %}
       - key: AEROSPIKE_NS
         value: |
