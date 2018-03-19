@@ -43,7 +43,7 @@
 
 resources:
 - type: compute.v1.firewall
-  name: aerospike-cluster-firewall
+  name: {{ '%s-firewall' % namePrefix }}
   properties:
     sourceRanges: [ "0.0.0.0/0" ]
     allowed:
@@ -51,12 +51,42 @@ resources:
         ports: [ "3000", "8081" ]
     targetTags:
       - {{ '%s-db' % namePrefix }}
-
+## AMC PASSWORD
 - type: password.py
   name: amc-password
   properties:
     length: 10
     includeSymbols: True
+## dynamic-price-floor-api user password
+- type: password.py
+  name: dpfa-password
+  properties:
+    length: 10
+    includeSymbols: True
+## data-dispensary-api user password
+- type: password.py
+  name: dda-password
+  properties:
+    length: 10
+    includeSymbols: True
+## klassifikator-api user password
+- type: password.py
+  name: ka-password
+  properties:
+    length: 10
+    includeSymbols: True
+## content-classify-api user password
+- type: password.py
+  name: cca-password
+  properties:
+    length: 10
+    includeSymbols: True
+## rfm-cron user password
+- type: password.py
+  name: rc-password
+  properties:
+    length: 10
+    includeSymbols: True    
 
 - type: vm_multiple_instances.py
   name: {{ namePrefix }}
@@ -154,21 +184,37 @@ resources:
             #done
             echo -e "$AEROSPIKE_NS" >> $AEROSPIKE_CONF
           fi
-          #AMC
+
+          ## AMC
           sed -ie "s/#user = \"<user>\"/user = \"amc\"/" /etc/amc/amc.conf
           sed -ie "s/#password = \"<pass>\"/password = \"${AMC_PASS}\"/" /etc/amc/amc.conf
           /opt/aerospike/balance_scsi_mq
           service aerospike restart
           service amc restart
-          ## SET OUR DEFAULT PASSWORDS PASSWORD 
-          echo "set password ${AMC_PASS} for admin" > /tmp/users.txt
-          /usr/bin/aql -f /tmp/users.txt
-          ## ENABLE SECURITY IN THE CONF 
+
+          ## SETUP USERS .. FIRST TURN ON SECURITY
           cp /etc/aerospike/aerospike.conf /etc/aerospike/aerospike.conf.orig
-          sed s/#SEC#// /etc/aerospike/aerospike.conf.orig > /etc/aerospike/aerospike.conf
-          ## RESTART THE SERVICE
+          sed -ie s/#SEC#// /etc/aerospike/aerospike.conf
           service aerospike restart
-          service amc restart	  
+          sleep 20
+          
+          ## CREATE USERS - WOULD BE GOOD TO SET THESE PASSWORDS AS PART OF METADATA SOMEHOW...
+          echo "INSTANCE PASS: ${AMC_PASS}" > /tmp/out.txt
+          /usr/bin/aql -ved -U admin -Padmin -c "show users" >> /tmp/out.txt 2>&1
+          /usr/bin/aql -ved -U admin -Padmin -c "create user dynamic-price-floor-api password ${DYNAMIC-PRICE-FLOOR-API_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user data-dispensary-api     password ${DATA-DISPENSARY-API_PASSWORD} role read"       >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user klassifikator-api       password ${KLASSIFIKATOR-API_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user content-classify-api    password ${CONTENT-CLASSIFY-API_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user rfm-cron                password ${RFM-CRON_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "show users" >> /tmp/out.txt 2>&1
+          
+          ## SET admin USER PASSWORD 
+          /usr/bin/aql -ved -U admin -Padmin -c "set password ${AMC_PASS} for admin" >> /tmp/out.txt 2>&1
+          service aerospike restart
+
+          ## CLEANUP - ALL PASSWORDS SHOULD BE VISIBLE IN THE GOOGLE CONSOLE .. :)
+          mv /tmp/out.txt /etc/aerospike/user_setup.log
+  
       {% if namespace %}
       - key: AEROSPIKE_NS
         value: |
@@ -177,7 +223,17 @@ resources:
       - key: AEROSPIKE_CLUSTER
         value: "{{ hostnames() | trim }}"
       - key: AMC_PASSWORD
-        value: "$(ref.amc-password.password)"
+        value: "$(ref.amc-password.password)" 
+      - key: DYNAMIC-PRICE-FLOOR-API_PASSWORD
+        value: "$(ref.dpfa-password.password)"
+      - key: DATA-DISPENSARY-API_PASSWORD
+        value: "$(ref.dda-password.password)"
+      - key: KLASSIFIKATOR-API_PASSWORD
+        value: "$(ref.ka-password.password)"
+      - key: CONTENT-CLASSIFY-API_PASSWORD
+        value: "$(ref.cca-password.password)"
+      - key: RFM-CRON_PASSWORD
+        value: "$(ref.rc-password.password)"
 
 outputs:
   - name: initialPrimarySelfLink
