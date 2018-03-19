@@ -215,6 +215,7 @@ resources:
           echo "RC_PASSWORD: ${RC_PASSWORD}"     >> /tmp/out.txt
           
           /usr/bin/aql -ved -U admin -Padmin -c "show users" >> /tmp/out.txt 2>&1
+          /usr/bin/aql -ved -U admin -Padmin -c "create user super    password ${AMC_PASS}      role sys-admin,data-admin,user-admin,read-write" >> /tmp/out.txt 2>&1 
           /usr/bin/aql -ved -U admin -Padmin -c "create user dpfa     password ${DPFA_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
           /usr/bin/aql -ved -U admin -Padmin -c "create user dda      password ${DDA_PASSWORD}  role read"       >> /tmp/out.txt 2>&1 
           /usr/bin/aql -ved -U admin -Padmin -c "create user ka       password ${KA_PASSWORD}   role read-write" >> /tmp/out.txt 2>&1 
