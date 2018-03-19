@@ -51,42 +51,44 @@ resources:
         ports: [ "3000", "8081" ]
     targetTags:
       - {{ '%s-db' % namePrefix }}
+
+## NOTE THAT I TURNED OFF INCLUDE SYMBOLS AS IT WAS MESSING UP PASSWORD CREATION FOR STANDARD AQL USERS
 ## AMC PASSWORD
 - type: password.py
   name: amc-password
   properties:
     length: 10
-    includeSymbols: True
+    includeSymbols: False
 ## dynamic-price-floor-api user password
 - type: password.py
   name: dpfa-password
   properties:
     length: 10
-    includeSymbols: True
+    includeSymbols: False
 ## data-dispensary-api user password
 - type: password.py
   name: dda-password
   properties:
     length: 10
-    includeSymbols: True
+    includeSymbols: False
 ## klassifikator-api user password
 - type: password.py
   name: ka-password
   properties:
     length: 10
-    includeSymbols: True
+    includeSymbols: False
 ## content-classify-api user password
 - type: password.py
   name: cca-password
   properties:
     length: 10
-    includeSymbols: True
+    includeSymbols: False
 ## rfm-cron user password
 - type: password.py
   name: rc-password
   properties:
     length: 10
-    includeSymbols: True    
+    includeSymbols: False    
 
 - type: vm_multiple_instances.py
   name: {{ namePrefix }}
@@ -199,13 +201,25 @@ resources:
           sleep 20
           
           ## CREATE USERS - WOULD BE GOOD TO SET THESE PASSWORDS AS PART OF METADATA SOMEHOW...
-          echo "INSTANCE PASS: ${AMC_PASS}" > /tmp/out.txt
+          DPFA_PASSWORD=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/DPFA_PASSWORD)
+          DDA_PASSWORD=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/DDA_PASSWORD)
+          KA_PASSWORD=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/KA_PASSWORD)
+          CCA_PASSWORD=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/CCA_PASSWORD)
+          RC_PASSWORD=$(curl -sL -H "Metadata-Flavor: Google"  metadata/computeMetadata/v1beta1/instance/attributes/RC_PASSWORD)
+          
+          echo "INSTANCE PASS: ${AMC_PASS}"      >  /tmp/out.txt
+          echo "DPFA_PASSWORD: ${DPFA_PASSWORD}" >> /tmp/out.txt
+          echo "DDA_PASSWORD: ${DDA_PASSWORD}"   >> /tmp/out.txt
+          echo "KA_PASSWORD: ${KA_PASSWORD}"     >> /tmp/out.txt
+          echo "CCA_PASSWORD: ${CCA_PASSWORD}"   >> /tmp/out.txt          
+          echo "RC_PASSWORD: ${RC_PASSWORD}"     >> /tmp/out.txt
+          
           /usr/bin/aql -ved -U admin -Padmin -c "show users" >> /tmp/out.txt 2>&1
-          /usr/bin/aql -ved -U admin -Padmin -c "create user dynamic-price-floor-api password ${DYNAMIC-PRICE-FLOOR-API_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
-          /usr/bin/aql -ved -U admin -Padmin -c "create user data-dispensary-api     password ${DATA-DISPENSARY-API_PASSWORD} role read"       >> /tmp/out.txt 2>&1 
-          /usr/bin/aql -ved -U admin -Padmin -c "create user klassifikator-api       password ${KLASSIFIKATOR-API_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
-          /usr/bin/aql -ved -U admin -Padmin -c "create user content-classify-api    password ${CONTENT-CLASSIFY-API_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
-          /usr/bin/aql -ved -U admin -Padmin -c "create user rfm-cron                password ${RFM-CRON_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user dpfa     password ${DPFA_PASSWORD} role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user dda      password ${DDA_PASSWORD}  role read"       >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user ka       password ${KA_PASSWORD}   role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user ca       password ${CCA_PASSWORD}  role read-write" >> /tmp/out.txt 2>&1 
+          /usr/bin/aql -ved -U admin -Padmin -c "create user rc       password ${RC_PASSWORD}   role read-write" >> /tmp/out.txt 2>&1 
           /usr/bin/aql -ved -U admin -Padmin -c "show users" >> /tmp/out.txt 2>&1
           
           ## SET admin USER PASSWORD 
@@ -214,7 +228,7 @@ resources:
 
           ## CLEANUP - ALL PASSWORDS SHOULD BE VISIBLE IN THE GOOGLE CONSOLE .. :)
           mv /tmp/out.txt /etc/aerospike/user_setup.log
-  
+
       {% if namespace %}
       - key: AEROSPIKE_NS
         value: |
@@ -224,15 +238,15 @@ resources:
         value: "{{ hostnames() | trim }}"
       - key: AMC_PASSWORD
         value: "$(ref.amc-password.password)" 
-      - key: DYNAMIC-PRICE-FLOOR-API_PASSWORD
+      - key: DPFA_PASSWORD
         value: "$(ref.dpfa-password.password)"
-      - key: DATA-DISPENSARY-API_PASSWORD
+      - key: DDA_PASSWORD
         value: "$(ref.dda-password.password)"
-      - key: KLASSIFIKATOR-API_PASSWORD
+      - key: KA_PASSWORD
         value: "$(ref.ka-password.password)"
-      - key: CONTENT-CLASSIFY-API_PASSWORD
+      - key: CCA_PASSWORD
         value: "$(ref.cca-password.password)"
-      - key: RFM-CRON_PASSWORD
+      - key: RC_PASSWORD
         value: "$(ref.rc-password.password)"
 
 outputs:
