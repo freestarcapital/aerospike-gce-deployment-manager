@@ -7,11 +7,11 @@ elif [ "$1" = "delete" ]; then
     echo "Delete deployment $2";
     gcloud deployment-manager deployments delete $2
 elif [ "$1" = "describe" ]; then
-    echo "Describe $2";
+    echo "Describe cluster $2";
     gcloud deployment-manager deployments describe $2
 elif [ "$1" = "create" ]; then
-    echo "Creating aerospike-cluster with config.yaml"
-    gcloud deployment-manager deployments create aerospike-cluster --config config.yaml
+    echo "Creating cluster with config.yaml named $2"
+    gcloud deployment-manager deployments create $2 --config config.yaml
 else
     echo "freestar_setup.sh"
     echo "options: create, list, describe, delete"
